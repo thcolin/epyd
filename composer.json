@@ -1,0 +1,25 @@
+{
+    "name": "thcolin/epyd",
+    "authors": [
+        {
+            "name": "thcolin",
+            "email": "th.colin3@gmail.com"
+        }
+    ],
+    "require": {
+	    "ext-curl": "*",
+        "silex/silex": "^1.3",
+        "twig/twig": "*",
+        "alaouy/youtube": "dev-master",
+        "kumatch/silex-json-body-provider": "dev-master",
+        "jyggen/curl": "dev-master",
+        "php-ffmpeg/php-ffmpeg": "~0.5",
+        "phansys/GetId3": "~2.1@dev",
+        "chumper/zipper": "0.6.x"
+    },
+	"autoload": {
+		"psr-4": {
+			"Epyd\\": "src/"
+		}
+	}
+}

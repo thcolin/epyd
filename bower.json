@@ -1,0 +1,37 @@
+{
+	"name": "thcolin/epyd",
+	"authors": [
+		"thcolin <th.colin3@gmail.com>"
+	],
+	"dependencies": {
+		"angular": "*",
+		"bootstrap": "3.*",
+		"fontawesome": "*",
+		"angular-ladda": "*",
+		"filesaver": "https://github.com/eligrey/FileSaver.js.git"
+	},
+	"overrides": {
+		"bootstrap": {
+			"main": [
+				"dist/css/bootstrap.css",
+				"dist/fonts/glyphicons-halflings-regular.eot",
+				"dist/fonts/glyphicons-halflings-regular.svg",
+				"dist/fonts/glyphicons-halflings-regular.ttf",
+				"dist/fonts/glyphicons-halflings-regular.woff",
+				"dist/fonts/glyphicons-halflings-regular.woff2"
+			],
+			"dependencies": {}
+		},
+		"ladda": {
+			"main": [
+				"dist/ladda-themeless.min.css",
+				"dist/ladda.min.js"
+			]
+		},
+		"filesaver": {
+			"main": [
+				"FileSaver.min.js"
+			]
+		}
+	}
+}

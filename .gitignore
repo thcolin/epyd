@@ -1,0 +1,13 @@
+# Composer
+/vendor
+composer.lock
+
+# Bower
+/bower_components
+
+# NPM
+/node_modules
+
+# App
+/app/vars.php
+/app/storage/*
