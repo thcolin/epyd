@@ -300,7 +300,7 @@
 			
 			$scope.isVideo = function(search){
 				
-				var rVideo = /https?:\/\/(www\.)?(youtube\.com|youtu\.be)\/(watch\?v=)?([^&]+)/i;
+				var rVideo = /https?:\/\/(www\.|m\.)?(youtube\.com|youtu\.be)\/(watch\?v=)?([^&]+)/i;
 				
 				if(rVideo.test(search) && !$scope.isPlaylist(search))
 				
@@ -314,7 +314,7 @@
 			
 			$scope.isPlaylist = function(search){
 				
-				var rPlaylist = /https?:\/\/(www\.)?(youtube\.com|youtu\.be)\/(watch\?v=[^&]+&list=([^&]+)|playlist\?list=([^&]+))/i;
+				var rPlaylist = /https?:\/\/(www\.|m\.)?(youtube\.com|youtu\.be)\/(watch\?v=[^&]+&list=([^&]+)|playlist\?list=([^&]+))/i;
 				
 				if(rPlaylist.test(search))
 				
