@@ -38,7 +38,7 @@
 				
 				this.getLink = function(){
 					
-					return 'https://www.youtube.com/watch?v=' + this.contentDetails.videoID;
+					return 'https://www.youtube.com/watch?v=' + this.id;
 					
 				};
 				
