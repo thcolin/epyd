@@ -100,7 +100,7 @@
 			$ffmpeg = FFMpeg::create();
 			
 			$format = new Mp3();
-			$format -> setAudioChannels(2) -> setAudioKiloBitrate(256);
+			$format -> setAudioChannels(2) -> setAudioKiloBitrate(192);
 			
 			$video = $ffmpeg -> open($this -> getVideoFile());
 			$video -> save($format, $this -> getAudioFile());
