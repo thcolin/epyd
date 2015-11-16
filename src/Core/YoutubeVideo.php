@@ -358,11 +358,17 @@
 			
 		private function getJavascriptFunction($name, $javascript){
 			
-			if(!preg_match('#(function '.preg_quote($name).'\(\w\){.*?})#', $javascript, $matches))
+			if(preg_match('#(function '.preg_quote($name).'\(\w\){.*?})#', $javascript, $matches))
+			
+				return $matches[1];
+			
+			else if(preg_match('#('.preg_quote($name).'=function\(\w\){.*?})#', $javascript, $matches))
+			
+				return $matches[1];
+				
+			else
 			
 				throw new Exception('Error on getting the algorithm.');
-			
-			return $matches[1];
 				
 		}
 		
