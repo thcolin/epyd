@@ -1,95 +1,79 @@
 body {
-	
+
 	padding: 20px 0px 20px 0px;
-	
+
 	a {
 		cursor: pointer;
 	}
-	
+
 	hr{
 		border-color: #d3d3d3;
 	}
-	
-	.errors{
-		
-		.alert{
-			
-			i{
-				margin-right: 10px;
-			}
-			
-			max-width: 730px;
-			margin-left: auto;
-			margin-right: auto;
-			
-		}
-		
-	}
 
 	.container {
-	
+
 		text-align: center;
 		background-color: #EEE;
-		padding: 10px 60px 30px 60px;
+		padding: 10px 50px 30px 50px;
 		border-bottom: 1px solid #e5e5e5;
 		border-radius: 6px;
 		overflow: hidden;
-		
+
 		h1{
 			font-size: 63px;
 		}
-		
+
 		.search{
-			
+
 			display: flex;
 			flex-direction: row;
 			margin-top: 30px;
-			
+
 			.searchbar{
 				flex: 1;
 				padding-right: 10px;
 			}
-			
+
 			.buttons .btn{
 				margin-left: 10px;
 			}
-			
+
 		}
-		
+
 		.options{
-			
+
 			margin-top: 20px;
-			
+
 			.btn-all{
 				float: left;
 			}
-			
+
 			.btn-download-all{
 				float: right;
 			}
-		
+
 		}
-	
+
 	}
-	
+
 	.videos{
-		
+
 		margin-top: 50px;
-		
+
 		.video{
-			
+
 			background-color: #EEE;
 			border-bottom: 1px solid #e5e5e5;
 			margin: 20px 20px 10px 20px;
 			border-radius: 6px;
 			min-height: 175px;
-			
+
 			.overview{
-				
+
 				float: left;
 				width: 200px;
 				padding: 10px;
-				
+
 				img{
 					padding: 7px;
 					width: 100%;
@@ -97,7 +81,7 @@ body {
 					background: white;
 					border-radius: 3px;
 				}
-				
+
 				.time{
 					text-align: right;
 					padding-right: 12px;
@@ -105,180 +89,180 @@ body {
 					color: white;
 					text-shadow: -1px 0 black, 0 1px black, 1px 0 black, 0 -1px black;
 				}
-				
+
 			}
-			
+
 			.infos{
 				float: left;
 				width: 200px;
 				padding: 10px;
 			}
-			
+
 			.description{
-				
+
 				float: left;
 				overflow: scroll;
 				width: ~"calc(100% - 750px)";
 				max-height: 175px;
 				margin: 10px 0px;
 				padding: 0px 10px;
-			
+
 				p{
 					white-space: pre;
 				}
-			
+
 			}
-			
+
 			.actions{
-				
+
 				float: right;
 				width: 350px;
 				padding: 10px;
-				
+
 				.inputs{
-					
+
 					.input-group{
 						margin-bottom: 10px;
 					}
-					
+
 				}
-				
+
 				.buttons{
-					
+
 					.btn-select{
 						width: 185px;
 					}
-					
+
 					.form-group{
 						width: 100%;
 					}
-					
+
 					.btn-download{
 						width: 140px;
 					}
-					
+
 					.full{
 						width: 100%;
 					}
-					
+
 				}
-				
+
 			}
-			
+
 		}
-		
+
 	}
-	
+
 	.nextPage{
-		
+
 		max-width: 730px;
 		margin: 20px auto 0px auto;
 		text-align: center;
-	
+
 	}
-	
+
 	@media screen and (min-width: 768px) {
-		
+
 		.container {
 			max-width: 730px;
 		}
-		
+
 	}
-	
+
 	@media (max-width: 390px) {
-		
+
 		.videos{
-			
+
 			.video{
-				
+
 				.actions{
-					
+
 					.buttons{
-						
+
 						.btn{
-						
+
 							width: 100% !important;
 							margin-top: 10px;
-							
+
 						}
-						
+
 					}
-					
+
 				}
-				
+
 			}
-			
+
 		}
-		
+
 	}
-	
+
 	@media (max-width: 810px) {
-		
+
 		.errors{
-			
+
 			.alert{
 				margin-left: 20px;
 				margin-right: 20px;
 			}
-			
+
 		}
-		
+
 		.container{
-			
+
 			padding: 5px 10px 20px 10px;
 			margin: 0 20px;
-		
+
 			.search{
-				
+
 				flex-direction: column;
-				
+
 				.searchbar{
 					padding-right: 0px;
 				}
-				
+
 				.buttons .btn{
 					margin-top: 20px;
 					margin-left: 0px;
 					width: 100%;
 				}
-				
+
 			}
-		
+
 			.options{
-				
+
 				.btn{
-					
+
 					float: none;
 					margin-bottom: 20px;
 					width: 100%;
-					
+
 					&:last-child{
 						margin-bottom: 0px;
 					}
-					
+
 				}
-			
+
 			}
-		
+
 		}
-		
+
 		.videos{
-			
+
 			.video{
-				
+
 				text-align: center;
-				
+
 				.overview{
 					float: inherit;
 					width: auto;
 				}
-				
+
 				.infos{
 					float: inherit;
 					width: auto;
 					margin-top: 10px;
 				}
-				
+
 				.description{
 					float: inherit;
 					width: auto;
@@ -286,16 +270,16 @@ body {
 					margin: 0px 10px;
 					padding: 10px 0px;
 				}
-				
+
 				.actions{
 					float: inherit;
 					width: auto;
 				}
-				
+
 			}
-			
+
 		}
-		
+
 	}
 
 }

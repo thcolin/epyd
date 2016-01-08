@@ -17,9 +17,17 @@
         "phansys/GetId3": "~2.1@dev",
         "chumper/zipper": "0.6.x"
     },
-	"autoload": {
-		"psr-4": {
-			"Epyd\\": "src/"
-		}
-	}
+  	"autoload": {
+  		"psr-4": {
+  			"Epyd\\": "src/"
+  		}
+  	},
+    "require-dev": {
+        "symfony/browser-kit": "~3.0"
+    },
+    "autoload-dev": {
+      "psr-4": {
+        "Epyd\\Tests\\": "tests/"
+      }
+    }
 }

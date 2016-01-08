@@ -1,179 +1,105 @@
 <!DOCTYPE html>
 <html lang="en">
-	
 	<head>
-	
 		<meta charset="utf-8">
 		<link rel="stylesheet" href="public/assets/css/vendor.css">
 		<link rel="stylesheet" href="public/assets/css/app.css">
 		<meta name="viewport" content="width=device-width, minimum-scale=1.0, maximum-scale=1.0" />
-		
 		<title>Epyd!</title>
-	
 	</head>
-	
+
 	<body ng-app="EpydApp">
-	
-		<header ng-controller="MessageController">
-		
-			{% verbatim %}
-			
-			<div class="errors" ng-repeat="(index, message) in MessageService.messages">
-			
-				<div class="alert alert-block" ng-class="message.style">
-					
-					<i class="fa" ng-class="message.icon"></i>
-					{{ message.text }}
-					<a class="close" ng-click="clearMessage(index)"><i class="fa fa-times"></i></a>
-				
-				</div>
-				
-			</div>
-			
-			{% endverbatim %}
-		
+		<header class="messages">
+			<mc-messages></mc-messages>
 		</header>
-		
+
 		<div ng-controller="EpydController">
-			
-			{% verbatim %}
-			
 			<section class="container">
-			
-				<header>
-				
-					<h1>Epyd!</h1>
-					
-					<h3>Easy Playlist (and Video) Youtube Downloadr (to MP3) !</h3>
-				
-				</header>
-				
-				<article class="search">
-					
-					<div class="searchbar">
-					
-						<input type="text" class="form-control" id="url" placeholder="Youtube URL !" ng-model="search"></input>
-					
-					</div>
-				
-					<div class="buttons">
-					
-						<button type="button" class="btn btn-primary btn-check" ladda="checkLoading" ng-click="check()"><span class="ladda-label">Check it !</span></button>
-						<button type="button" class="btn btn-success btn-download" ladda="downloadLoading" ng-if="isVideo(search)" ng-click="downloadLink(search)"><span class="ladda-label">Download !</span></button>
-					
-					</div>
-				
-				</article>
-				
-				<article class="options" ng-if="isPlaylist(search)">
-				
-					<hr/>
-				
-					<button type="button" class="btn btn-default btn-all" ng-click="toggleAll()">{{ isAllSelected() ? 'Deselect All':'Select All' }}</button>
-					<button type="button" class="btn btn-success btn-download-all" ladda="downloadAllLoading" ng-click="downloadSelectedVideos()">Download all the selected Videos</button>
-					
-				</article>
-				
-				{% endverbatim %}
-			
-			</section>
-			
-			<section class="videos">
-			
 				{% verbatim %}
-			
+				<header>
+					<h1>Epyd!</h1>
+					<h3>Easy Playlist (and Video) Youtube Downloadr (to MP3) !</h3>
+				</header>
+
+				<article class="search">
+					<div class="searchbar">
+						<input type="text" class="form-control" id="url" placeholder="Youtube URL !" ng-model="youtubeURL"></input>
+					</div>
+
+					<div class="buttons">
+						<button type="button" class="btn btn-primary btn-check" ladda="loadingAnalyse" ng-click="getVideos(youtubeURL)"><span class="ladda-label">Check it !</span></button>
+						<button type="button" class="btn btn-success btn-download" ladda="loadingDownload" ng-show="isVideo(youtubeURL)" ng-click="downloadVideoLink(youtubeURL)"><span class="ladda-label">Download !</span></button>
+					</div>
+				</article>
+
+				<article class="options" ng-show="isPlaylist(youtubeURL)">
+					<hr/>
+					<button type="button" class="btn btn-default btn-all" ng-click="toggleSelectAll()">{{ isAllSelected() ? 'Deselect All':'Select All' }}</button>
+					<button type="button" class="btn btn-success btn-download-all" ladda="loadingDownloadAll" ng-click="downloadSelectedVideos()">Download all the selected Videos</button>
+				</article>
+				{% endverbatim %}
+			</section>
+
+			<section class="videos">
+				{% verbatim %}
 				<div class="video" ng-repeat="video in videos">
-				
 					<div class="overview">
-				  
 						<img ng-src="{{ video.snippet.thumbnails.standard.url ? video.snippet.thumbnails.standard.url:video.snippet.thumbnails.default.url }}">
 						<div class="time">{{ video.contentDetails.duration }}</div>
-					
 					</div>
-			  
-					<div class="infos">  
-		  
-						<p>  
-		  
-							<a ng-href="{{ video.getLink() }}">{{ video.snippet.title }}</a>  
-		  
-							<br/>  
-		  
-							de <b><a ng-href="{{ video.getChannelLink() }}">{{ video.snippet.channelTitle }}</a></b>  
-		  
-							<br/>  
-							<br/>  
-		  
-							<i class="fa fa-play-circle-o"></i> {{ video.statistics.viewCount }} Vues  
-							<br/>  
-							<i class="fa fa-heart-o"></i> {{ video.statistics.likeCount }} / <i class="fa fa-thumbs-o-down"></i> {{ video.statistics.dislikeCount }} 
-		  
-						</p>  
-		  
-					</div> 
-			  
-					<div class="description">  
-		  
-						<p>{{ video.snippet.description }}</p>  
-		  
+
+					<div class="infos">
+						<p>
+							<a ng-href="{{ video.getLink() }}">{{ video.snippet.title }}</a>
+							<br/>
+							de <b><a ng-href="{{ video.getChannelLink() }}">{{ video.snippet.channelTitle }}</a></b>
+							<br/>
+							<br/>
+							<i class="fa fa-play-circle-o"></i> {{ video.statistics.viewCount }} Vues
+							<br/>
+							<i class="fa fa-heart-o"></i> {{ video.statistics.likeCount }} / <i class="fa fa-thumbs-o-down"></i> {{ video.statistics.dislikeCount }}
+						</p>
 					</div>
-			  
-					<div class="actions">  
-			  
-						<div class="inputs">  
-			  
+
+					<div class="description">
+						<p>{{ video.snippet.description }}</p>
+					</div>
+
+					<div class="actions">
+						<div class="inputs">
 							<div class="input-group">
-			  
 								<span class="input-group-addon"><i class="fa fa-user fa-label"></i></span>
-								<input type="text" class="form-control" name="artist" ng-model="video.epyd.artist" placeholder="Artist">  
-			  
-							</div>  
-			  
-							<div class="input-group">  
-			  
+								<input type="text" class="form-control" name="artist" ng-model="video.id3.artist" placeholder="Artist">
+							</div>
+
+							<div class="input-group">
 								<span class="input-group-addon"><i class="fa fa-music fa-label"></i></span>
-								<input type="text" class="form-control" name="title" ng-model="video.epyd.title" placeholder="Title">  
-			  
-							</div>  
-			  
-						</div>  
-			  
-						<div class="buttons">  
-			  
-							<div class="form-inline">  
-			  
-								<div class="form-group">
-			  
-									<button class="btn btn-default btn-select" ng-click="video.toggleSelected()" ng-class="{active: video.isSelected()}" ng-show="multi">{{ video.isSelected() ? 'Added !':'Add to Download Playlist' }}</button>
-									<button class="btn btn-primary btn-download" ng-click="downloadVideo(video)" ladda="video.loading" ng-class="{full: !multi}"><span class="ladda-label">Download</span></button>  
-			  
-								</div>  
-			  
-							</div>  
-			  
+								<input type="text" class="form-control" name="title" ng-model="video.id3.title" placeholder="Title">
+							</div>
 						</div>
-			  
+
+						<div class="buttons">
+							<div class="form-inline">
+								<div class="form-group">
+									<button class="btn btn-default btn-select" ng-click="video.toggleSelected()" ng-class="{active: video.isSelected()}" ng-show="videos.length > 1">{{ video.isSelected() ? 'Added !':'Add to Download Playlist' }}</button>
+									<button class="btn btn-primary btn-download" ng-click="downloadVideo(video)" ladda="video.loadingDownload" ng-class="{full: (videos.length == 1)}"><span class="ladda-label">Download</span></button>
+								</div>
+							</div>
+						</div>
 					</div>
-					
+
 					<div class="clearfix"></div>
-				
 				</div>
-				
 				{% endverbatim %}
-			
 			</section>
-			
-			<section class="nextPage" ng-show="nextPage">
-			
-				<button class="btn btn-primary btn-next" ladda="checkNextLoading" ng-click="checkNextVideos()"><span class="ladda-label">Charger les vidéos suivante..</span></button>
-			
+
+			<section class="nextPage" ng-show="next">
+				<button class="btn btn-primary btn-next" ladda="loadingNext" ng-click="getVideos(youtubeURL, next)"><span class="ladda-label">Charger les vidéos suivante..</span></button>
 			</section>
-			
 		</div>
-		
 	</body>
-	
+
 	<script type="text/javascript" src="public/assets/js/vendor.js"></script>
 	<script type="text/javascript" src="public/assets/js/angular.js"></script>
-	
+
 </html>

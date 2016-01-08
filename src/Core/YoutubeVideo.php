@@ -5,430 +5,255 @@
 	use DateTime;
 	use DateInterval;
 
+	use V8JS;
+
 	use Jyggen\Curl\Curl;
 	use Jyggen\Curl\Request;
-
-	use FFMpeg\FFMpeg;
-	use FFMpeg\Format\Audio\Mp3;
 
 	use GetId3\GetId3Core;
 	use GetId3\Write\Tags;
 
-	use V8JS;
 	use Exception;
+	use Epyd\Exceptions\UnavailableYoutubeVideoException;
 
 	class YoutubeVideo{
 
-		public function __construct($object){
+		const VIDEO = 1;
+		const AUDIO = 2;
+		const ALL   = 3;
 
+		public function __construct($object){
 			$array = json_decode(json_encode($object), true);
 
-			foreach($array as $key => $value)
-
+			foreach($array as $key => $value){
 				$this -> $key = $value;
-
-			# Check if already parsed
-
-			if(!isset($this -> epyd)){
-
-				# Test if banned
-
-				$this -> getWebInfos();
-
-				# Corrections
-
-				$start = new DateTime('@0');
-				$start -> add(new DateInterval($this -> contentDetails['duration']));
-				$this -> contentDetails['duration'] = $start -> format('i:s');
-
-				# FileSystem
-
-				$this -> filename = md5(time().$this -> id.rand());
-
-				# Epyd
-
-				$this -> epyd = array();
-
-				if(preg_match('#([^\-]+) \- (.+)#', $this -> snippet['title'], $matches)){
-
-					$this -> epyd['title'] = $matches[2];
-					$this -> epyd['artist'] = $matches[1];
-
-				}
-
-				else{
-
-					$this -> epyd['title'] = $this -> videoTitle;
-					$this -> epyd['artist'] = null;
-
-				}
-
 			}
 
+			// webInfos (usefull to get flux & javascript assets)
+			$response = Curl::get('http://www.youtube.com/watch?v='.$this -> id.'&gl=US&persist_gl=1&hl=en&persist_hl=1');
+			$raw = $response[0] -> getContent();
+
+			if(!preg_match('#ytplayer.config = ({.*?});#', $raw, $matches)){
+				throw new UnavailableYoutubeVideoException('La vidéo Youtube "'.$this -> snippet['title'].'" n\'est pas disponible.');
+			}
+
+			$this -> webInfos = json_decode($matches[1], true);
+
+			// correct duration
+			$start = new DateTime('@0');
+			$start -> add(new DateInterval($this -> contentDetails['duration']));
+			$this -> contentDetails['duration'] = $start -> format('i:s');
+
+			// id3 tags
+			$this -> id3 = [];
+			if(preg_match('#([^\-]+) \- (.+)#', $this -> snippet['title'], $matches)){
+				$this -> setID3Tag('title', $matches[2]);
+				$this -> setID3Tag('artist', $matches[1]);
+			} else{
+				$this -> setID3Tag('title', $this -> videoTitle);
+				$this -> setID3Tag('artist', null);
+			}
+
+			// token
+			$this -> setToken();
 		}
 
-		public function clean(){
-
-			if(is_file($this -> getAudioFile()))
-
-				unlink($this -> getAudioFile());
-
-			if(is_file($this -> getVideoFile()))
-
-				unlink($this -> getVideoFile());
-
+		public function clean($tag = self::ALL){
+			$opts = array_reverse(str_split(decbin($tag)));
+			if(is_file($this -> getVideoFilePath()) && $opts[0]){
+				unlink($this -> getVideoFilePath());
+			}
+			if(is_file($this -> getAudioFilePath()) && $opts[1]){
+				unlink($this -> getAudioFilePath());
+			}
 		}
 
-		/* V8JS */
-
-		private function executeJavascript($javascript){
-
-			$V8JS = new V8Js();
-
-			ob_start();
-			$V8JS -> executeString($javascript);
-			$return = ob_get_clean();
-
-			return $return;
-
+		public function getToken(){
+			return $this -> token;
 		}
 
-		/* Convert */
-
-		public function extractAudio(){
-
-			$ffmpeg = FFMpeg::create();
-
-			$format = new Mp3();
-			$format -> setAudioChannels(2) -> setAudioKiloBitrate(192);
-
-			$video = $ffmpeg -> open($this -> getVideoFile());
-			$video -> save($format, $this -> getAudioFile());
-
+		public function setToken(){
+			$this -> token = md5(time().$this -> id.rand());
 		}
 
-		private function getBestThumbnail(){
+		public function getID3Tags(){
+			return $this -> id3;
+		}
 
+		public function getID3Tag($tag){
+			return (isset($this -> id3[$tag]) ? $this -> id3[$tag]:null);
+		}
+
+		public function setID3Tag($tag, $value){
+			$this -> id3[$tag] = $value;
+		}
+
+		public function writeID3Tags(){
+			$writer = new Tags();
+
+			$writer -> filename = $this -> getAudioFilePath();
+			$writer -> tagformats = ['id3v1', 'id3v2.3'];
+			$writer -> overwrite_tags = true;
+			$writer -> tag_encoding = 'UTF-8';
+			$writer -> remove_other_tags = true;
+			$writer -> tag_data = [
+				'title' => [$this -> getID3Tag('title')],
+				'artist' => [$this -> getID3Tag('artist')],
+				'attached_picture' => [$this -> getBestThumbnail()]
+			];
+
+			$writer -> WriteTags();
+		}
+
+		public function getBestThumbnail(){
 			$best = ['width' => 0];
-
 			foreach($this -> snippet['thumbnails'] as $thumbnail){
-
-				if($thumbnail['width'] > $best['width'])
-
+				if($thumbnail['width'] > $best['width']){
 					$best = $thumbnail;
-
+				}
 			}
-
 			list($width, $height, $type) = getimagesize($best['url']);
 			$imagetypes = array(1 => 'gif', 2 => 'jpeg', 3 => 'png');
-
-			if(!isset($imagetypes[$type]))
-
+			if(!isset($imagetypes[$type])){
 				return [];
-
+			}
 			return [
 				'data' => file_get_contents($best['url']),
 				'picturetypeid' => 'Other',
 				'description' => basename($best['url']),
 				'mime' => 'image/'.$imagetypes[$type]
 			];
-
-		}
-
-		public function writeID3Tags(){
-
-			$writer = new Tags();
-
-			$writer -> filename = $this -> getAudioFile();
-			$writer -> tagformats = ['id3v1', 'id3v2.3'];
-			$writer -> overwrite_tags = true;
-			$writer -> tag_encoding = 'UTF-8';
-			$writer -> remove_other_tags = true;
-			$writer -> tag_data = [
-				'title' => [$this -> epyd['title']],
-				'artist' => [$this -> epyd['artist']],
-				'attached_picture' => [$this -> getBestThumbnail()]
-			];
-
-			$writer -> WriteTags();
-
-		}
-
-		/* Download */
-
-		public function download(){
-
-			$this -> prepareDownloadRequest();
-			$this -> executeDownloadRequest();
-			$this -> completeDownloadRequest();
-			$this -> extractAudio();
-			$this -> writeID3Tags();
-
 		}
 
 		public function getDownloadRequest(){
-
-			if(!isset($this -> downloadRequest))
-
-				$this -> prepareDownloadRequest();
-
-			return $this -> downloadRequest;
-
-		}
-
-		private function prepareDownloadRequest(){
-
-			$video = $this -> getBestVideo();
-
-			if(isset($video['signature'])){
-
-				$signature = $this -> decodeSignature($video['signature']);
-				$url = $video['url'].'&signature='.$signature;
-
+			if(isset($this -> downloadRequest)){
+				return $this -> downloadRequest;
 			}
 
-			else
+			$flux = $this -> getBestFlux();
 
-				$url = $video['url'];
+			if(isset($flux['signature'])){
+				$signature = $this -> decodeSignature($flux['signature']);
+				$url = $flux['url'].'&signature='.$signature;
+			} else{
+				$url = $flux['url'];
+			}
 
 			$this -> downloadRequest = new Request($url);
-			$this -> downloadRequest -> setOption(CURLOPT_FILE, $this -> getTempFileHandler());
+ 			$this -> downloadRequest -> setOption(CURLOPT_FILE, $this -> getDownloadStream());
 
+			return $this -> downloadRequest;
 		}
 
-		private function executeDownloadRequest(){
+		public function closeDownloadRequest(){
+			$request = $this -> getDownloadRequest();
+			$fp = fopen($this -> getVideoFilePath(), 'w+');
 
-			$this -> downloadRequest -> execute();
+			fseek($this -> fp, $request -> getInfo(CURLINFO_HEADER_SIZE));
 
+			while(!feof($this -> fp)){
+				fwrite($fp, fread($this -> fp, 8192));
+			}
+
+			fclose($this -> fp);
+			fclose($fp);
+
+			if(!filesize($this -> getVideoFilePath())){
+				throw new Exception('Erreur lors du téléchargement de la vidéo "'.$this -> snippet['title'].'".');
+			}
 		}
 
-		public function completeDownloadRequest(){
+		public function getDownloadStream(){
+			if(!isset($this -> fp)){
+				$this -> fp = tmpfile();
+			}
 
-			$this -> copyTmpFile2VideoFile();
-
+			return $this -> fp;
 		}
 
-		private function copyTmpFile2VideoFile(){
-
-			fseek($this -> getTempFileHandler(), $this -> downloadRequest -> getInfo(CURLINFO_HEADER_SIZE));
-
-			while(!feof($this -> getTempFileHandler()))
-
-				fwrite($this -> getVideoFileHandler(), fread($this -> getTempFileHandler(), 8192));
-
-			$this -> closeTempFileHandler();
-			$this -> closeVideoFileHandler();
-
+		public function getVideoFilePath(){
+			return PATH_APP.'/storage/'.$this -> getToken().'.mp4';
 		}
 
-		/* Filesystem */
-
-		# Video
-
-		public function getVideoFile(){
-
-			return PATH_APP.'/storage/'.$this -> filename.'.mp4';
-
+		public function getAudioFilePath(){
+			return PATH_APP.'/storage/'.$this -> getToken().'.mp3';
 		}
 
-		public function isVideoFileDownloaded(){
+		private function getBestFlux(){
+			$fluxs = [];
 
-			return (is_file($this -> getVideoFile()) && filesize($this -> getVideoFile()) > 0);
+			foreach(explode(',', $this -> webInfos['args']['url_encoded_fmt_stream_map']) as $format){
+				parse_str($format, $parsed);
 
+				$fluxs[$parsed['itag']]['url'] = urldecode($parsed['url']);
+				$fluxs[$parsed['itag']]['type'] = explode(';', $parsed['type'])[0];
+
+				if(isset($parsed['s'])){
+					$fluxs[$parsed['itag']]['signature'] = $parsed['s'];
+				}
+			}
+
+			foreach(['38', '37', '22', '35', '34', '18'] as $quality){
+				if(isset($fluxs[$quality])){
+					return $fluxs[$quality];
+				}
+			}
+
+			throw new Exception('Error on getting the best video for "'.$this -> snippet['title'].'".');
 		}
-
-		private function getVideoFileHandler(){
-
-			if(!isset($this -> fpVideo))
-
-				$this -> fpVideo = fopen($this -> getVideoFile(), 'w+');
-
-			return $this -> fpVideo;
-
-		}
-
-		private function closeVideoFileHandler(){
-
-			if(isset($this -> fpVideo))
-
-				fclose($this -> fpVideo);
-
-		}
-
-		# Audio
-
-		public function getAudioFile(){
-
-			return PATH_APP.'/storage/'.$this -> filename.'.mp3';
-
-		}
-
-		public function isAudioFileExtracted(){
-
-			return (is_file($this -> getAudioFile()) && filesize($this -> getAudioFile()) > 0);
-
-		}
-
-		# Temp
-
-		private function getTempFileHandler(){
-
-			if(!isset($this -> fpTemp))
-
-				$this -> fpTemp = tmpfile();
-
-			return $this -> fpTemp;
-
-		}
-
-		private function closeTempFileHandler(){
-
-			if(isset($this -> fpTemp))
-
-				fclose($this -> fpTemp);
-
-		}
-
-		# Final
-
-		public function getFinalFile(){
-
-			return $this -> getAudioFile();
-
-		}
-
-		public function getToken(){
-
-			return $this -> filename;
-
-		}
-
-		/* Javascript */
 
 		private function decodeSignature($signature){
+			// get javascript asset
+			$asset = file_get_contents('http:'.$this -> webInfos['assets']['js']);
 
-			$asset = $this -> getJavascriptAsset();
+			if(!$asset){
+				throw new Exception('Error on getting the Javascript Asset for "'.$this -> snippet['title'].'".');
+			}
 
-			$name = $this -> getJavascriptAlgorithmName($asset);
-			$algo = $this -> getJavascriptFunction($name, $asset);
-			$helper = $this -> getJavascriptAlgorithmHelper($asset, $algo);
+			// get algo javascript function name
+			if(preg_match('#\.sig\|\|([a-zA-Z0-9$]+)\(#', $asset, $matches)){
+				$algoName = $matches[1];
+			} else{
+				throw new Exception('Error on getting the algorithm name for "'.$this -> snippet['title'].'".');
+			}
 
-			$javascript = implode("\n", array($helper, $algo, 'print('.$name.'("'.$signature.'"));'));
+			// get algo javascript function
+			if(preg_match('#(function '.preg_quote($algoName).'\(\w\){.*?})#s', $asset, $matches)){
+				$algo = $matches[1];
+			} else if(preg_match('#('.preg_quote($algoName).'=function\(\w\){.*?})#s', $asset, $matches)){
+				$algo = $matches[1];
+			} else{
+				throw new Exception('Error on getting the algorithm for "'.$this -> snippet['title'].'".');
+			}
 
+			// get decode javascript helpers functions name
+			if(preg_match('#\);(\$?\w+)\.#', $algo, $matches)){
+				$helperName = $matches[1];
+			} else{
+				throw new Exception('Error on getting the helper name for "'.$this -> snippet['title'].'".');
+			}
+
+			// get decode javascript helpers functions
+			if(preg_match('#(var )?'.preg_quote($helperName).'={.*?};#s', $asset, $matches)){
+				$helper = $matches[0];
+			} else{
+				throw new Exception('Error on getting the helper for "'.$this -> snippet['title'].'".');
+			}
+
+			$javascript = implode("\n", [$helper, $algo, 'print('.$algoName.'("'.$signature.'"));']);
 			$decoded = $this -> executeJavascript($javascript);
 
 			return $decoded;
-
 		}
 
-		private function getWebInfos(){
+		private function executeJavascript($javascript){
+			$V8JS = new V8JS();
 
-			$response = Curl::get('http://www.youtube.com/watch?v='.$this -> id.'&gl=US&persist_gl=1&hl=en&persist_hl=1');
-			$raw = $response[0] -> getContent();
+			ob_start();
+			$V8JS -> executeString($javascript);
+			$return = ob_get_clean();
 
-			if(!preg_match('#ytplayer.config = ({.*?});#', $raw, $matches))
-
-				throw new Exception('Error on getting the web infos for "'.$this -> snippet['title'].'".');
-
-			$this -> webInfos = json_decode($matches[1], true);
-
-		}
-
-		private function getJavascriptAsset(){
-
-			$javascript = file_get_contents('http:'.$this -> webInfos['assets']['js']);
-
-			if(!$javascript)
-
-				throw new Exception('Error on getting the Javascript Asset.');
-
-			return $javascript;
-
-		}
-
-		private function getJavascriptAlgorithmName($javascript){
-
-			if(!preg_match('#\.sig\|\|([a-zA-Z0-9$]+)\(#', $javascript, $matches))
-
-				throw new Exception('Error on getting the algorithm name.');
-
-			return $matches[1];
-
-		}
-
-		private function getJavascriptFunction($name, $javascript){
-
-			if(preg_match('#(function '.preg_quote($name).'\(\w\){.*?})#', $javascript, $matches))
-
-				return $matches[1];
-
-			else if(preg_match('#('.preg_quote($name).'=function\(\w\){.*?})#', $javascript, $matches))
-
-				return $matches[1];
-
-			else
-
-				throw new Exception('Error on getting the algorithm.');
-
-		}
-
-		private function getJavascriptAlgorithmHelper($javascript, $algo){
-
-			if(!preg_match('#\);(\$?\w+)\.#', $algo, $matches))
-
-				throw new Exception('Error on getting the helper name.');
-
-			$name = $matches[1];
-
-			if(!preg_match('#(var )?'.preg_quote($name).'={.*?};#s', $javascript, $matches))
-
-				throw new Exception('Error on getting the helper.');
-
-			return $matches[0];
-
-		}
-
-		/* Videos */
-
-		private function getVideos(){
-
-			$videos = [];
-
-			foreach(explode(',', $this -> webInfos['args']['url_encoded_fmt_stream_map']) as $format){
-
-				parse_str($format, $temp);
-
-				$videos[$temp['itag']]['url'] = urldecode($temp['url']);
-				$videos[$temp['itag']]['type'] = explode(';', $temp['type'])[0];
-
-				if(isset($temp['s']))
-
-					$videos[$temp['itag']]['signature'] = $temp['s'];
-
-			}
-
-			return $videos;
-
-		}
-
-		private function getBestVideo(){
-
-			$videos = $this -> getVideos();
-
-			if(!$videos)
-
-				throw new Exception('Error on getting the videos.');
-
-			foreach(['38', '37', '22', '35', '34', '18'] as $quality){
-
-				if(isset($videos[$quality]))
-
-					return $videos[$quality];
-
-			}
-
-			throw new Exception('Error on getting the best video.');
-
+			return $return;
 		}
 
 	}

@@ -1,7 +1,10 @@
 (function() {
     'use strict';
-    
+
     angular
-		.module('EpydApp', ['angular-ladda']);
-		
+  		.module('EpydApp', [
+        'angular-ladda',
+        'MessageCenterModule'
+      ]);
+
 })();

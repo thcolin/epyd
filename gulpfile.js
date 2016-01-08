@@ -11,7 +11,10 @@ var gulp = require('gulp'),
 	
 	less      = require('gulp-less'),
 	uglify    = require('gulp-uglify'),
-	minifyCSS = require('gulp-minify-css');
+	minifyCSS = require('gulp-minify-css'),
+	flatten   = require('gulp-flatten'),
+	inject    = require('gulp-inject'),
+	rename    = require("gulp-rename");
 
 /* Vendor (Bower) */
 
@@ -56,17 +59,30 @@ gulp.task('bower-fonts', function(){
 
 /* App (Assets) */
 
-gulp.task('app-css', function(){
+gulp.task('app-less', function(){
 	
-	return merge2(
-			gulp.src('./resources/assets/**/*.less')
-				.pipe(less()),
-			gulp.src('./resources/assets/**/*.css')
-		)
+	var sources = gulp.src([
+			'!./resources/assets/less/imports.less',
+			'./resources/assets/less/vars.less',
+			'./resources/assets/less/mixins/**/*.less',
+			'./resources/assets/less/**/*.less',
+			'./angular/**/*.less'
+		], {read: false})
+		.pipe(unique())
+		.pipe(print());
+	
+	return gulp.src('./resources/assets/less/imports.less')
+		.pipe(inject(sources, {
+			starttag: '/* inject:imports */',
+			endtag: '/* endinject */',
+			transform: function (path) {
+				return '@import ".' + path + '";';
+			}
+		}))
 		.pipe(plumber())
-		.pipe(print())
-		.pipe(concat('app.css'))
+		.pipe(less())
 		.pipe(minifyCSS())
+		.pipe(rename('app.css'))
 		.pipe(gulp.dest('./public/assets/css'));
 	
 });
@@ -103,17 +119,38 @@ gulp.task('angular-js', function(){
 		.pipe(unique())
 		.pipe(print())
 		.pipe(concat('angular.js'))
-		.pipe(uglify())
+		//.pipe(uglify())
 		.pipe(gulp.dest('./public/assets/js'));
 		
 });
 
 gulp.task('angular-templates', function(){
 	
-	return gulp.src('./resources/views/angular/**/*.html')
+	return gulp.src('./angular/**/*Template.html')
 		.pipe(plumber())
+		.pipe(flatten())
 		.pipe(print())
 		.pipe(gulp.dest('./public/views'));
+	
+});
+
+gulp.task('angular-modals', function(){
+	
+	return gulp.src('./angular/modals/**/*Template.html')
+		.pipe(plumber())
+		.pipe(flatten())
+		.pipe(print())
+		.pipe(gulp.dest('./public/views/modals'));
+	
+});
+
+gulp.task('angular-directives', function(){
+	
+	return gulp.src('./angular/**/*Directive.html')
+		.pipe(plumber())
+		.pipe(flatten())
+		.pipe(print())
+		.pipe(gulp.dest('./public/views/directives'));
 	
 });
 
@@ -123,13 +160,15 @@ gulp.task('watch', function(){
 	
 	gulp.watch('./bower_components/**/*', ['bower-css', 'bower-js', 'bower-fonts']);
 	
-	gulp.watch('./resources/assets/**/*.{css,less}', ['app-css']);
+	gulp.watch('./resources/assets/**/*.less', ['app-less']);
+	gulp.watch('./angular/**/*.less', ['app-less']);
+	
 	gulp.watch('./resources/assets/**/*.js', ['app-js']);
 	gulp.watch('./resources/assets/**/*.{eot,svg,ttf,woff,woff2}', ['app-fonts']);
 	
 	gulp.watch('./angular/**/*.js', ['angular-js']);
-	gulp.watch('./resources/views/angular/**/*.html', ['angular-templates']);
+	gulp.watch('./angular/**/*.html', ['angular-templates', 'angular-modals', 'angular-directives']);
 	
 });
 
-gulp.task('default', ['bower-css', 'bower-js', 'bower-fonts', 'app-css', 'app-js', 'app-fonts', 'angular-js', 'angular-templates', 'watch']);
+gulp.task('default', ['bower-css', 'bower-js', 'bower-fonts', 'app-less', 'app-js', 'app-fonts', 'angular-js', 'angular-templates', 'angular-modals', 'angular-directives', 'watch']);

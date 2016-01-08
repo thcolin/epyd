@@ -8,7 +8,7 @@
 		"bootstrap": "3.*",
 		"fontawesome": "*",
 		"angular-ladda": "*",
-		"filesaver": "https://github.com/eligrey/FileSaver.js.git"
+		"message-center": "*"
 	},
 	"overrides": {
 		"bootstrap": {
@@ -28,10 +28,10 @@
 				"dist/ladda.min.js"
 			]
 		},
-		"filesaver": {
-			"main": [
-				"FileSaver.min.js"
-			]
-		}
+    "message-center": {
+      "dependencies": {
+        "angular": "*"
+      }
+    }
 	}
 }
