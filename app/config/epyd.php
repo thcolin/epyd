@@ -20,7 +20,7 @@
 	use Epyd\Core\YoutubeManager;
 
 	$app['youtube.manager'] = $app -> share(function($app){
-		return new YoutubeManager($app['ffmpeg'], $app['youtube']);
+		return new YoutubeManager($app['ffmpeg'], $app['youtube'], $app['monolog']);
 	});
 
 ?>

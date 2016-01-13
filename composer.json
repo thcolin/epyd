@@ -7,7 +7,7 @@
         }
     ],
     "require": {
-	    "ext-curl": "*",
+        "ext-curl": "*",
         "silex/silex": "^1.3",
         "twig/twig": "*",
         "alaouy/youtube": "dev-master",
@@ -15,7 +15,8 @@
         "jyggen/curl": "dev-master",
         "php-ffmpeg/php-ffmpeg": "~0.5",
         "phansys/GetId3": "~2.1@dev",
-        "chumper/zipper": "0.6.x"
+        "chumper/zipper": "0.6.x",
+        "monolog/monolog": "~1.17"
     },
   	"autoload": {
   		"psr-4": {

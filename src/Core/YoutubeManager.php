@@ -3,6 +3,7 @@
   namespace Epyd\Core;
 
   use FFMpeg\FFMpeg;
+  use Monolog\Logger;
 	use FFMpeg\Format\Audio\Mp3;
   use Alaouy\Youtube\Youtube;
 	use Chumper\Zipper\Zipper;
@@ -22,9 +23,10 @@
     protected $youtube;
     protected $exceptions = [];
 
-    public function __construct(FFMpeg $ffmpeg, Youtube $youtube){
+    public function __construct(FFMpeg $ffmpeg, Youtube $youtube, Logger $logger){
       $this -> ffmpeg = $ffmpeg;
       $this -> youtube = $youtube;
+      $this -> logger = $logger;
     }
 
     public function getTokenFilePath($token){
@@ -98,16 +100,18 @@
       $dp = new Dispatcher();
 
       if(!$collection -> length()){
-        throw new EmptyYoutubeVideoCollectionException('La collection de vidéoss Youtube à télécharger est vide.');
+        throw new EmptyYoutubeVideoCollectionException('La collection de vidéos Youtube à télécharger est vide.');
       }
 
       foreach($collection -> getItems() as $key => $video){
         try{
           $request = $video -> getDownloadRequest();
           $i = $dp -> add($request);
+          $this -> logger -> addNotice('Downloading : "'.$video -> snippet['title'].'" ('.$video -> id.')');
         } catch(Exception $e){
           $collection -> deleteItem($key);
           $this -> addException($e);
+          $this -> logger -> addCritical(get_class($e).': '.$e -> getMessage());
         }
       }
 
@@ -122,6 +126,7 @@
         } catch(Exception $e){
           $collection -> deleteItem($key);
           $this -> addException($e);
+          $this -> logger -> addCritical(get_class($e).': '.$e -> getMessage());
         }
       }
 
